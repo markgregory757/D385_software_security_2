@@ -46,11 +46,11 @@ RUBRIC SECTIONS:
     D3: Describe 2 exception handling improvements
     D4: Describe 1 encryption method for REST/API security
 """
-
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 import sqlite3
 import os
-
+import secrets
+from werkzeug.security import check_password_hash, generate_password_hash
 app = Flask(__name__)
 
 # =============================================================================
@@ -76,12 +76,15 @@ app = Flask(__name__)
 #   D1: Describe 2 mitigation strategies for this vulnerability
 # =============================================================================
 
-app.secret_key = 'supersecretkeyforflasksessions'
 
-API_KEY = "sk_live_abc123xyz789secretkey"
+# app.secret_key = 'supersecretkeyforflasksessions'
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))  # Secure replacement using environment variable
+# API_KEY = "sk_live_abc123xyz789secretkey"
+API_KEY = os.environ.get('API_KEY','')
 
 DB_USER = "admin"
-DB_PASSWORD = "password123"
+# DB_PASSWORD = "password123"
+DB_PASSWORD = os.environ.get('DB_PASSWORD','')
 
 # Equipment Pricing Data
 EQUIPMENT_PRICES = {
