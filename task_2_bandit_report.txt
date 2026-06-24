@@ -1,0 +1,107 @@
+$ bandit -r app_student.py -f txt
+
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.12.6
+Run started:2026-01-30 03:40:15.998169+00:00
+
+Test results:
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'supersecretkeyforflasksessions'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:79:17
+78
+79	app.secret_key = 'supersecretkeyforflasksessions'
+80
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'password123'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:84:14
+83	DB_USER = "admin"
+84	DB_PASSWORD = "password123"
+85
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'admin123'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:115:14
+114	USERS_DB = {
+115	    "admin": {"password": "admin123", "role": "admin", "api_key": "sk_admin_key123"},
+116	    "alice": {"password": "alice456", "role": "user", "api_key": "sk_alice_key456"},
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'alice456'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:116:14
+115	    "admin": {"password": "admin123", "role": "admin", "api_key": "sk_admin_key123"},
+116	    "alice": {"password": "alice456", "role": "user", "api_key": "sk_alice_key456"},
+117	    "bob": {"password": "bob789", "role": "user", "api_key": "sk_bob_key789"},
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'bob789'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:117:12
+116	    "alice": {"password": "alice456", "role": "user", "api_key": "sk_alice_key456"},
+117	    "bob": {"password": "bob789", "role": "user", "api_key": "sk_bob_key789"},
+118	    "charlie": {"password": "charlie000", "role": "guest", "api_key": "sk_charlie_key000"}
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'charlie000'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b105_hardcoded_password_string.html
+   Location: ./app_student.py:118:16
+117	    "bob": {"password": "bob789", "role": "user", "api_key": "sk_bob_key789"},
+118	    "charlie": {"password": "charlie000", "role": "guest", "api_key": "sk_charlie_key000"}
+119	}
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Low
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b608_hardcoded_sql_expressions.html
+   Location: ./app_student.py:319:12
+318	    # TODO: Replace with parameterized query
+319	    query = "SELECT * FROM users WHERE username = '" + username + "'"
+320
+
+--------------------------------------------------
+>> Issue: [B201:flask_debug_true] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.
+   Severity: High   Confidence: Medium
+   CWE: CWE-94 (https://cwe.mitre.org/data/definitions/94.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b201_flask_debug_true.html
+   Location: ./app_student.py:652:4
+651	    print(f"WARNING: Using hardcoded API key: {API_KEY}")
+652	    app.run(debug=True, port=5000)
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 366
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 6
+		Medium: 1
+		High: 1
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 1
+		Medium: 7
+		High: 0
+Files skipped (0):

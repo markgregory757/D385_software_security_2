@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Rent Equipment</h2>
+<p>Select your equipment and rental duration.</p>
+
+<form method="POST" action="/rent" class="row g-3">
+    <div class="col-md-6">
+        <label for="equipment_type" class="form-label">Equipment Type</label>
+        <select class="form-select" id="equipment_type" name="equipment_type" required>
+            <option selected disabled value="">Choose...</option>
+            <option value="Bulldozer">Bulldozer ($500/day)</option>
+            <option value="Excavator">Excavator ($450/day)</option>
+            <option value="Crane">Crane ($800/day)</option>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label for="days" class="form-label">Rental Duration (Days)</label>
+        <input type="number" class="form-control" id="days" name="days" placeholder="e.g. 3" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-success">Calculate & Rent</button>
+    </div>
+</form>
+
+{% if rental_result %}
+<hr>
+<div class="card mt-4">
+    <div class="card-header">
+        Rental Confirmation
+    </div>
+    <div class="card-body">
+        <h5 class="card-title">{{ rental_result.equipment }}</h5>
+        <p class="card-text">Duration: {{ rental_result.days }} days</p>
+        <p class="card-text"><strong>Total Cost: ${{ rental_result.total_cost }}</strong></p>
+        <a href="/" class="btn btn-primary">Return Home</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

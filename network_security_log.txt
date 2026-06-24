@@ -1,0 +1,129 @@
+# Network and API Security Log
+# WGU Construction Equipment Rental API System
+# Date Range: 2025-12-22 to 2025-12-28
+# ============================================================
+
+2025-12-22 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-22 06:00:05 - NETWORK - INFO - System Interface 'eth0' UP. IP: 192.168.1.10
+2025-12-22 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-22 06:00:11 - API - INFO - API endpoints initialized: /api/v1/user, /api/v1/rentals, /api/v1/admin/*
+2025-12-22 06:00:12 - API - WARNING - API Key authentication not enforced on all endpoints
+2025-12-22 08:15:22 - API - INFO - GET /api/v1/rentals from 192.168.1.55 - Status: 200
+2025-12-22 08:16:45 - API - INFO - POST /api/v1/rentals from 192.168.1.55 - Equipment: Excavator, Days: 5
+2025-12-22 09:30:00 - API - INFO - POST /api/v1/authenticate - User 'alice' authenticated from 192.168.1.102
+2025-12-22 10:15:33 - SECURITY - WARNING - GET /api/v1/admin/users accessed WITHOUT authentication from 203.0.113.50
+2025-12-22 10:15:34 - SECURITY - CRITICAL - Admin endpoint accessed without authorization - BROKEN ACCESS CONTROL
+2025-12-22 14:22:33 - SYSTEM - INFO - Disk usage check: 45% used. Status: Healthy
+2025-12-22 18:00:00 - API - INFO - Daily API summary: 145 requests, 12 errors
+
+2025-12-23 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-23 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-23 08:05:23 - API - INFO - GET / (Home page) from 192.168.1.55
+2025-12-23 09:12:15 - API - ERROR - GET /api/v1/user?username=' OR '1'='1 from 198.51.100.45
+2025-12-23 09:12:15 - SECURITY - CRITICAL - SQL INJECTION ATTEMPT DETECTED from IP: 198.51.100.45
+2025-12-23 09:12:16 - API - ERROR - Database query returned ALL users - SQL injection successful!
+2025-12-23 09:12:17 - SECURITY - CRITICAL - Data breach: All user records exposed via SQL injection
+2025-12-23 09:15:00 - SECURITY - WARNING - Multiple SQL injection probes from 198.51.100.45
+2025-12-23 09:15:01 - API - ERROR - GET /api/v1/user?username=admin'; DROP TABLE users;-- from 198.51.100.45
+2025-12-23 09:15:02 - SECURITY - CRITICAL - DROP TABLE attempt blocked by database permissions
+2025-12-23 10:30:00 - API - WARNING - POST /api/v1/rentals with negative days: -10 from 192.168.1.78
+2025-12-23 10:30:01 - API - ERROR - Negative rental calculated: Equipment Bulldozer, Days: -10, Total: $-5000
+2025-12-23 10:30:02 - SECURITY - WARNING - Business logic flaw exploited - negative cost rental created
+2025-12-23 11:45:00 - SECURITY - INFO - IP 198.51.100.45 added to blocklist after SQL injection attempts
+2025-12-23 14:22:33 - SYSTEM - INFO - Disk usage check: 52% used. Status: Healthy
+2025-12-23 15:00:00 - API - INFO - GET /api/v1/search?q=Bulldozer from 192.168.1.33 - Status: 200
+2025-12-23 18:00:00 - API - INFO - Daily API summary: 203 requests, 28 security events
+
+2025-12-24 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-24 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-24 02:15:00 - SECURITY - WARNING - Rapid requests to /api/v1/authenticate from 45.33.32.156
+2025-12-24 02:15:01 - SECURITY - WARNING - POST /api/v1/authenticate - Failed login for 'admin' from 45.33.32.156
+2025-12-24 02:15:02 - SECURITY - WARNING - POST /api/v1/authenticate - Failed login for 'admin' from 45.33.32.156
+2025-12-24 02:15:03 - SECURITY - WARNING - POST /api/v1/authenticate - Failed login for 'admin' from 45.33.32.156
+2025-12-24 02:15:04 - SECURITY - WARNING - POST /api/v1/authenticate - Failed login for 'admin' from 45.33.32.156
+2025-12-24 02:15:05 - SECURITY - WARNING - POST /api/v1/authenticate - Failed login for 'admin' from 45.33.32.156
+2025-12-24 02:15:06 - SECURITY - CRITICAL - BRUTE FORCE ATTACK: 50 auth attempts in 10 seconds from 45.33.32.156
+2025-12-24 02:15:07 - SECURITY - WARNING - No rate limiting implemented - brute force not prevented
+2025-12-24 02:20:00 - SECURITY - WARNING - POST /api/v1/authenticate - User 'admin' compromised via brute force
+2025-12-24 02:20:01 - SECURITY - CRITICAL - Unauthorized access to admin account from 45.33.32.156
+2025-12-24 08:30:00 - API - INFO - GET /api/v1/rentals from 192.168.1.55 - Status: 200
+2025-12-24 09:00:00 - API - WARNING - Sensitive data in response: SSN field exposed in rental records
+2025-12-24 10:15:00 - API - ERROR - GET /api/v1/search?q=<script>alert('XSS')</script> from 203.0.113.77
+2025-12-24 10:15:01 - SECURITY - CRITICAL - XSS ATTACK ATTEMPT from IP: 203.0.113.77
+2025-12-24 10:15:02 - API - WARNING - Unsanitized input reflected in API response
+2025-12-24 14:22:33 - SYSTEM - INFO - Disk usage check: 58% used. Status: Healthy
+2025-12-24 15:30:00 - SECURITY - WARNING - API key exposed in URL: GET /api/v1/rentals?api_key=sk_live_abc123
+2025-12-24 15:30:01 - SECURITY - WARNING - API keys should be in Authorization header, not URL parameters
+2025-12-24 18:00:00 - API - INFO - Daily API summary: 312 requests, 45 security events
+
+2025-12-25 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-25 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-25 03:00:00 - SECURITY - WARNING - High volume of requests from single IP: 198.51.100.100
+2025-12-25 03:00:01 - API - INFO - Request 1/1000 from 198.51.100.100
+2025-12-25 03:00:02 - API - INFO - Request 100/1000 from 198.51.100.100
+2025-12-25 03:00:05 - API - INFO - Request 500/1000 from 198.51.100.100
+2025-12-25 03:00:10 - SECURITY - CRITICAL - DoS ATTACK: 1000 requests in 10 seconds from 198.51.100.100
+2025-12-25 03:00:11 - SYSTEM - WARNING - Server CPU at 95% - possible DoS attack in progress
+2025-12-25 03:00:12 - SYSTEM - ERROR - Service degradation detected - response times > 5 seconds
+2025-12-25 03:00:15 - SECURITY - WARNING - No rate limiting - DoS attack successful
+2025-12-25 03:05:00 - SYSTEM - INFO - Attack subsided - server recovering
+2025-12-25 09:00:00 - API - INFO - Normal operations resumed
+2025-12-25 10:30:00 - API - WARNING - DELETE /api/v1/admin/delete_user?username=alice from 203.0.113.99
+2025-12-25 10:30:01 - SECURITY - CRITICAL - User deletion WITHOUT authentication from external IP
+2025-12-25 10:30:02 - API - ERROR - User 'alice' deleted by unauthenticated request
+2025-12-25 10:30:03 - SECURITY - CRITICAL - BROKEN ACCESS CONTROL on destructive endpoint
+2025-12-25 14:22:33 - SYSTEM - INFO - Disk usage check: 62% used. Status: Healthy
+2025-12-25 18:00:00 - API - INFO - Daily API summary: 1523 requests (DoS), 67 security events
+
+2025-12-26 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-26 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-26 08:00:00 - API - INFO - GET /api/v1/rentals from 192.168.1.55 - Returns ALL rentals (no auth check)
+2025-12-26 08:00:01 - SECURITY - WARNING - Rental endpoint returns data for ALL users - least privilege violation
+2025-12-26 09:15:00 - API - ERROR - POST /api/v1/rentals - TypeError: unsupported operand type(s) for *
+2025-12-26 09:15:01 - API - ERROR - Input 'days' was string 'abc' - no type validation
+2025-12-26 09:15:02 - SECURITY - WARNING - Unhandled exception exposed stack trace to client
+2025-12-26 10:00:00 - API - WARNING - Hardcoded API key found in source: sk_live_abc123xyz789secretkey
+2025-12-26 10:00:01 - SECURITY - WARNING - Secrets committed to source code repository
+2025-12-26 11:30:00 - API - INFO - GET /api/v1/user?username=bob from IP: 192.168.1.102 (user: alice)
+2025-12-26 11:30:01 - API - WARNING - User 'alice' accessed user 'bob' data - no authorization check
+2025-12-26 11:30:02 - SECURITY - WARNING - Horizontal privilege escalation - users can view other users' data
+2025-12-26 14:22:33 - SYSTEM - INFO - Disk usage check: 68% used. Status: Healthy
+2025-12-26 15:00:00 - API - ERROR - Internal error details leaked: "sqlite3.OperationalError: no such table"
+2025-12-26 15:00:01 - SECURITY - WARNING - Verbose error messages reveal implementation details
+2025-12-26 18:00:00 - API - INFO - Daily API summary: 278 requests, 34 security events
+
+2025-12-27 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-27 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-27 07:45:00 - SECURITY - WARNING - Buffer overflow attempt: GET /api/v1/search?q=[10000 char string]
+2025-12-27 07:45:01 - API - ERROR - Memory allocation failed processing oversized input
+2025-12-27 07:45:02 - SECURITY - WARNING - No input length validation - buffer overflow-style attack possible
+2025-12-27 09:00:00 - API - INFO - POST /api/v1/rentals - Equipment: Bulldozer, Days: 999999 from 192.168.1.78
+2025-12-27 09:00:01 - API - WARNING - Extreme rental period accepted - no boundary validation
+2025-12-27 09:00:02 - API - ERROR - Calculated cost: $499,999,500 - unrealistic rental
+2025-12-27 10:30:00 - SECURITY - WARNING - Suspicious DNS query for api.malicious-domain.com from 203.0.113.88
+2025-12-27 10:30:01 - NETWORK - WARNING - Possible DNS hijacking attempt or data exfiltration
+2025-12-27 11:00:00 - API - INFO - API response includes sensitive field: password_hash
+2025-12-27 11:00:01 - SECURITY - CRITICAL - Password hashes exposed in API response - data breach risk
+2025-12-27 14:22:33 - SYSTEM - INFO - Disk usage check: 71% used. Status: Healthy
+2025-12-27 16:00:00 - API - WARNING - POST /api/v1/rentals with injected JSON: {"equipment":"Crane","days":5,"role":"admin"}
+2025-12-27 16:00:01 - SECURITY - WARNING - Mass assignment vulnerability - extra fields accepted
+2025-12-27 18:00:00 - API - INFO - Daily API summary: 198 requests, 41 security events
+
+2025-12-28 06:00:01 - SYSTEM - INFO - Daily log rotation completed. Previous logs archived.
+2025-12-28 06:00:10 - API - INFO - Application 'EquipmentRentalAPI' started. Version 2.2.0
+2025-12-28 08:00:00 - SECURITY - INFO - Security audit initiated by administrator
+2025-12-28 08:00:01 - SECURITY - CRITICAL - AUDIT FINDINGS SUMMARY:
+2025-12-28 08:00:02 - SECURITY - CRITICAL - 1. SQL Injection vulnerability in /api/v1/user endpoint
+2025-12-28 08:00:03 - SECURITY - CRITICAL - 2. Broken Access Control on admin endpoints
+2025-12-28 08:00:04 - SECURITY - CRITICAL - 3. Missing authentication on multiple API routes
+2025-12-28 08:00:05 - SECURITY - CRITICAL - 4. No rate limiting - vulnerable to brute force and DoS
+2025-12-28 08:00:06 - SECURITY - CRITICAL - 5. Hardcoded secrets in source code
+2025-12-28 08:00:07 - SECURITY - CRITICAL - 6. Sensitive data exposure (SSN, passwords) in responses
+2025-12-28 08:00:08 - SECURITY - CRITICAL - 7. XSS vulnerability in search endpoint
+2025-12-28 08:00:09 - SECURITY - CRITICAL - 8. Missing input validation (type, boundary, length)
+2025-12-28 08:00:10 - SECURITY - CRITICAL - 9. Least privilege violations - users can access all data
+2025-12-28 08:00:11 - SECURITY - CRITICAL - 10. Verbose error messages reveal implementation details
+2025-12-28 08:00:12 - SECURITY - INFO - Immediate remediation required - HIGH RISK
+2025-12-28 14:22:33 - SYSTEM - INFO - Disk usage check: 73% used. Status: Healthy
+2025-12-28 18:00:00 - API - INFO - Daily API summary: 156 requests, 15 security events
+2025-12-28 23:59:59 - SYSTEM - INFO - End of log period. Weekly security report generated.

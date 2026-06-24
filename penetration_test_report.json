@@ -1,0 +1,95 @@
+{
+  "penetration_test_report": {
+    "title": "WGU Construction Equipment Rental API - Penetration Test Report",
+    "date": "YYYY-MM-DD",
+    "tester": "Student Name - Student ID",
+    "target_system": "EquipmentRentalAPI v2.2.0",
+    "scope": "API endpoints at /api/v1/*",
+    "executive_summary": "TODO: Provide a summary of your penetration test findings after analyzing the API.",
+
+    "_instructions": "REMOVE THIS FIELD BEFORE SUBMISSION: Complete this report by conducting a lightweight penetration test against the API. Identify common attack types and document your findings. Refer to network_security_log.txt for evidence of attacks.",
+
+    "findings": [
+      {
+        "id": "VULN-001",
+        "attack_type": "TODO: Identify the attack type (e.g., SQL Injection, XSS, DoS, Broken Access Control)",
+        "severity": "TODO: CRITICAL/HIGH/MEDIUM/LOW",
+        "cvss_score": 0.0,
+        "endpoint": "TODO: Which endpoint is affected?",
+        "observable_pattern": "TODO: What pattern did you observe that indicates this vulnerability?",
+        "evidence": "TODO: Provide evidence from your testing (requests made, responses received)",
+        "impact": "TODO: What is the potential impact of this vulnerability?",
+        "recommended_mitigation": [
+          "TODO: List specific mitigation strategies"
+        ]
+      },
+      {
+        "id": "VULN-002",
+        "attack_type": "TODO: Identify another attack type",
+        "severity": "TODO: CRITICAL/HIGH/MEDIUM/LOW",
+        "cvss_score": 0.0,
+        "endpoint": "TODO: Which endpoint is affected?",
+        "observable_pattern": "TODO: Describe the observable pattern",
+        "evidence": "TODO: Provide testing evidence",
+        "impact": "TODO: Describe the impact",
+        "recommended_mitigation": [
+          "TODO: List mitigation strategies"
+        ]
+      },
+      {
+        "id": "VULN-003",
+        "attack_type": "TODO: Add more findings as needed (minimum 5 recommended)",
+        "severity": "TODO",
+        "cvss_score": 0.0,
+        "endpoint": "TODO",
+        "observable_pattern": "TODO",
+        "evidence": "TODO",
+        "impact": "TODO",
+        "recommended_mitigation": ["TODO"]
+      }
+    ],
+
+    "attack_summary": {
+      "sql_injection": {
+        "description": "TODO: Explain what SQL injection is and how it works",
+        "indicators_observed": "TODO: What indicators of SQL injection did you observe in the logs or during testing?"
+      },
+      "buffer_overflow": {
+        "description": "TODO: Explain what buffer overflow attacks are and how they manifest in web APIs",
+        "indicators_observed": "TODO: What indicators did you observe?"
+      },
+      "xss": {
+        "description": "TODO: Explain what Cross-Site Scripting (XSS) attacks are",
+        "indicators_observed": "TODO: What XSS indicators did you observe?"
+      },
+      "dns_hijacking": {
+        "description": "TODO: Explain what DNS hijacking is and its implications for API security",
+        "indicators_observed": "TODO: What DNS-related indicators did you observe in the logs?"
+      },
+      "dos": {
+        "description": "TODO: Explain what Denial of Service (DoS) attacks are",
+        "indicators_observed": "TODO: What DoS indicators did you observe?"
+      }
+    },
+
+    "remediation_priority": [
+      {
+        "priority": 1,
+        "vulnerability": "TODO: Most critical vulnerability ID",
+        "reason": "TODO: Why is this highest priority?"
+      },
+      {
+        "priority": 2,
+        "vulnerability": "TODO: Second priority",
+        "reason": "TODO: Reason"
+      },
+      {
+        "priority": 3,
+        "vulnerability": "TODO: Third priority",
+        "reason": "TODO: Reason"
+      }
+    ],
+
+    "conclusion": "TODO: Provide your overall conclusions and recommendations for securing the API."
+  }
+}

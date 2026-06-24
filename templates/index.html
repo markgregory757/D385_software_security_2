@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Heavy Equipment for Tough Jobs</h1>
+        <p class="col-md-8 fs-4">Reliable, maintained, and ready to work. Now with REST API access!</p>
+        <a href="/rent" class="btn btn-primary btn-lg me-2" type="button">Rent Now</a>
+        <a href="/api/docs" class="btn btn-secondary btn-lg" type="button">API Documentation</a>
+    </div>
+</div>
+
+<div class="row align-items-md-stretch">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <img src="https://images.unsplash.com/photo-1603814744174-115311ad645e?auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Bulldozer" style="height: 200px; object-fit: cover;">
+            <div class="card-body bg-dark text-white rounded-bottom-3">
+                <h2 class="card-title">Bulldozer</h2>
+                <p class="card-text">Perfect for pushing large quantities of soil, sand, or rubble. High torque and traction.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+             <img src="https://images.unsplash.com/photo-1628645419184-26a1f2757340?auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Excavator" style="height: 200px; object-fit: cover;">
+            <div class="card-body bg-light border rounded-bottom-3">
+                <h2 class="card-title">Excavator</h2>
+                <p class="card-text">Ideal for digging trenches, holes, and foundations. Includes hydraulic arm.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <img src="https://images.unsplash.com/photo-1539269071019-8bc6d57b0205?auto=format&fit=crop&w=800&q=80" class="card-img-top" alt="Crane" style="height: 200px; object-fit: cover;">
+            <div class="card-body bg-secondary text-white rounded-bottom-3">
+                <h2 class="card-title">Crane</h2>
+                <p class="card-text">For lifting heavy materials and moving them to other places. 50-ton capacity.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .api-docs {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .api-section {
+        margin-bottom: 2rem;
+    }
+    .endpoint-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .endpoint-header {
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .endpoint-header.get {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .endpoint-header.post {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .endpoint-header.delete {
+        background: linear-gradient(135deg, #cb2d3e 0%, #ef473a 100%);
+    }
+    .endpoint-header.put {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .method-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        background: rgba(255,255,255,0.2);
+        min-width: 70px;
+        text-align: center;
+    }
+    .endpoint-path {
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+    .endpoint-body {
+        padding: 1.25rem;
+        background: #fff;
+    }
+    .endpoint-description {
+        color: #495057;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+    }
+    .code-block {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+        margin: 0.75rem 0;
+    }
+    .code-block .key {
+        color: #9cdcfe;
+    }
+    .code-block .string {
+        color: #ce9178;
+    }
+    .code-block .number {
+        color: #b5cea8;
+    }
+    .param-table {
+        width: 100%;
+        margin: 0.75rem 0;
+        border-collapse: collapse;
+    }
+    .param-table th {
+        background: #f8f9fa;
+        padding: 0.75rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        color: #6c757d;
+    }
+    .param-table td {
+        padding: 0.75rem;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: top;
+    }
+    .param-name {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        color: #e83e8c;
+        font-weight: 500;
+    }
+    .param-type {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    .security-warning {
+        background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+        border-left: 4px solid #e53e3e;
+        padding: 1rem;
+        border-radius: 0 6px 6px 0;
+        margin: 1rem 0;
+    }
+    .security-warning strong {
+        color: #c53030;
+    }
+    .response-codes-table {
+        width: 100%;
+        margin-top: 1.5rem;
+    }
+    .response-codes-table th {
+        background: #2d3748;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+    }
+    .response-codes-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .status-code {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        min-width: 50px;
+        text-align: center;
+    }
+    .status-2xx {
+        background: #c6f6d5;
+        color: #22543d;
+    }
+    .status-4xx {
+        background: #feebc8;
+        color: #744210;
+    }
+    .status-5xx {
+        background: #fed7d7;
+        color: #742a2a;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #667eea;
+    }
+    .intro-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    .intro-box h1 {
+        margin-bottom: 0.5rem;
+    }
+    .intro-box p {
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+    .label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+</style>
+
+<div class="api-docs">
+    <div class="intro-box">
+        <h1>API Documentation</h1>
+        <p class="lead mb-0">REST API for WGU Construction Equipment Rental System v2.0</p>
+    </div>
+
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-triangle-fill me-2" viewBox="0 0 16 16">
+            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        <div>
+            <strong>Security Notice:</strong> This API is under security review. Several endpoints contain vulnerabilities that need to be addressed before production use.
+        </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <h2 class="section-title">Authentication</h2>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header post">
+            <span class="method-badge">POST</span>
+            <span class="endpoint-path">/api/v1/authenticate</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Authenticate with username and password to receive an API key for subsequent requests.</p>
+
+            <div class="label">Request Body</div>
+            <div class="code-block">
+{
+    <span class="key">"username"</span>: <span class="string">"alice"</span>,
+    <span class="key">"password"</span>: <span class="string">"alice456"</span>
+}
+            </div>
+
+            <div class="label">Success Response (200)</div>
+            <div class="code-block">
+{
+    <span class="key">"status"</span>: <span class="string">"success"</span>,
+    <span class="key">"message"</span>: <span class="string">"Authentication successful"</span>,
+    <span class="key">"api_key"</span>: <span class="string">"your_api_key_here"</span>
+}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Endpoints -->
+    <h2 class="section-title">User Endpoints</h2>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header get">
+            <span class="method-badge">GET</span>
+            <span class="endpoint-path">/api/v1/user</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Retrieve user information by username.</p>
+
+            <div class="label">Query Parameters</div>
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">username</span></td>
+                        <td><span class="param-type">string</span></td>
+                        <td>The username to look up</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="label">Example Request</div>
+            <div class="code-block">
+GET /api/v1/user?username=alice
+            </div>
+
+            <div class="security-warning">
+                <strong>Security Issue:</strong> This endpoint is vulnerable to SQL injection and returns sensitive data including passwords!
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental Endpoints -->
+    <h2 class="section-title">Rental Endpoints</h2>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header get">
+            <span class="method-badge">GET</span>
+            <span class="endpoint-path">/api/v1/rentals</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Retrieve all rental records. Optionally filter by username.</p>
+
+            <div class="label">Query Parameters</div>
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">user</span></td>
+                        <td><span class="param-type">string</span></td>
+                        <td>Optional - Filter rentals by username</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="security-warning">
+                <strong>Security Issue:</strong> No authentication required! Any user can view all rental records including sensitive SSN data.
+            </div>
+        </div>
+    </div>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header post">
+            <span class="method-badge">POST</span>
+            <span class="endpoint-path">/api/v1/rentals</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Create a new equipment rental.</p>
+
+            <div class="label">Request Body</div>
+            <div class="code-block">
+{
+    <span class="key">"equipment"</span>: <span class="string">"Bulldozer"</span>,
+    <span class="key">"days"</span>: <span class="number">3</span>,
+    <span class="key">"username"</span>: <span class="string">"alice"</span>
+}
+            </div>
+
+            <div class="label">Success Response (201)</div>
+            <div class="code-block">
+{
+    <span class="key">"status"</span>: <span class="string">"success"</span>,
+    <span class="key">"message"</span>: <span class="string">"Rental created"</span>,
+    <span class="key">"data"</span>: {
+        <span class="key">"id"</span>: <span class="number">4</span>,
+        <span class="key">"user"</span>: <span class="string">"alice"</span>,
+        <span class="key">"equipment"</span>: <span class="string">"Bulldozer"</span>,
+        <span class="key">"days"</span>: <span class="number">3</span>,
+        <span class="key">"total"</span>: <span class="number">1500</span>
+    }
+}
+            </div>
+
+            <div class="security-warning">
+                <strong>Security Issue:</strong> No input validation! Negative days and invalid equipment types are accepted.
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Endpoint -->
+    <h2 class="section-title">Search</h2>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header get">
+            <span class="method-badge">GET</span>
+            <span class="endpoint-path">/api/v1/search</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Search for equipment by name.</p>
+
+            <div class="label">Query Parameters</div>
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">q</span></td>
+                        <td><span class="param-type">string</span></td>
+                        <td>Search query</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="label">Example</div>
+            <div class="code-block">
+GET /api/v1/search?q=Bull
+            </div>
+
+            <div class="security-warning">
+                <strong>Security Issue:</strong> Vulnerable to XSS - user input is reflected without sanitization!
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Endpoints -->
+    <h2 class="section-title">Admin Endpoints</h2>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header get">
+            <span class="method-badge">GET</span>
+            <span class="endpoint-path">/api/v1/admin/users</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Get a list of all users (admin only).</p>
+
+            <div class="security-warning">
+                <strong>Critical Security Issue:</strong> This admin endpoint has NO authentication! Anyone can access it.
+            </div>
+        </div>
+    </div>
+
+    <div class="endpoint-card">
+        <div class="endpoint-header delete">
+            <span class="method-badge">DELETE</span>
+            <span class="endpoint-path">/api/v1/admin/delete_user</span>
+        </div>
+        <div class="endpoint-body">
+            <p class="endpoint-description">Delete a user account (admin only).</p>
+
+            <div class="label">Query Parameters</div>
+            <table class="param-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">username</span></td>
+                        <td><span class="param-type">string</span></td>
+                        <td>The username to delete</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="security-warning">
+                <strong>Critical Security Issue:</strong> Destructive operation with NO authentication! Anyone can delete users.
+            </div>
+        </div>
+    </div>
+
+    <!-- HTTP Response Codes -->
+    <h2 class="section-title">HTTP Response Codes</h2>
+
+    <table class="table response-codes-table">
+        <thead>
+            <tr>
+                <th style="width: 120px;">Code</th>
+                <th style="width: 150px;">Status</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="status-code status-2xx">200</span></td>
+                <td>OK</td>
+                <td>Request successful - data returned in response body</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-2xx">201</span></td>
+                <td>Created</td>
+                <td>Resource created successfully (e.g., new rental)</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-4xx">400</span></td>
+                <td>Bad Request</td>
+                <td>Invalid input or malformed request</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-4xx">401</span></td>
+                <td>Unauthorized</td>
+                <td>Authentication required but not provided</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-4xx">403</span></td>
+                <td>Forbidden</td>
+                <td>Authenticated but insufficient permissions</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-4xx">404</span></td>
+                <td>Not Found</td>
+                <td>Requested resource does not exist</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-4xx">429</span></td>
+                <td>Too Many Requests</td>
+                <td>Rate limit exceeded</td>
+            </tr>
+            <tr>
+                <td><span class="status-code status-5xx">500</span></td>
+                <td>Internal Server Error</td>
+                <td>Unexpected server error occurred</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Equipment Pricing -->
+    <h2 class="section-title">Equipment Pricing</h2>
+
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Equipment</th>
+                <th>Daily Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Bulldozer</td>
+                <td>$500/day</td>
+            </tr>
+            <tr>
+                <td>Excavator</td>
+                <td>$450/day</td>
+            </tr>
+            <tr>
+                <td>Crane</td>
+                <td>$800/day</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}
