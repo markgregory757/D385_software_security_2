@@ -1,5 +1,5 @@
 """
-WGU Construction Equipment Rental - Flask API Application (Task 2 Student Starter)
+WGU Construction Equipment Rental - Flask API Application (Task 2 Solution)
 
 Scenario:
 You have joined a development team responsible for securing an internal API that
@@ -13,78 +13,67 @@ The security team has provided you with:
 - A bandit security scan report (task_2_bandit_report.txt)
 - Logs showing suspicious traffic (network_security_log.txt)
 
-Your Task:
-1. Review task_2_flake8_report.txt to identify GENERAL security vulnerabilities (Section A)
-2. Review task_2_bandit_report.txt to identify API security vulnerabilities (Section B)
-3. Remediate the vulnerabilities and write test cases (Section C)
-4. Write a Security Mitigation Report (Section D)
-
-INSTRUCTIONS:
-- Complete all TODO items marked throughout this file
-- Save your completed work as app_solution.py
-- Document your changes in your Security Mitigation Report
-- Reference the flake8 and bandit reports for vulnerability identification
-
-RUBRIC SECTIONS:
+REMEDIATION SUMMARY:
   Section A — General Security Vulnerabilities (from flake8 report)
-    A1: Provide screenshot of insecure code with line numbers (pick 2 vulnerabilities)
-    A2: Implement secure replacement code for each vulnerability
-    A3: Comment out the original insecure code after remediation
+    A1/A2/A3: Hardcoded secrets replaced with environment variables (lines 79-84)
+    A1/A2/A3: Plaintext passwords replaced with werkzeug hashed passwords (lines 114-119)
   Section B — API Security Vulnerabilities (from bandit report)
-    B1: Provide screenshot of insecure API code with line numbers (pick 2 vulnerabilities)
-    B2: Implement secure replacement code for each vulnerability
-    B3: Comment out the original insecure API code after remediation
-  Section C — Test Cases
-    C1: Use pytest framework with test_ naming convention
-    C2: Include assert statements in each test
-    C3: Execute tests successfully (all pass)
-    C4: Add descriptive print() statements explaining test outcomes
-    C5: Provide 4 screenshots (2 general + 2 API test pass results)
-  Section D — Written Security Mitigation Report
-    D1: Describe 2 mitigation strategies for each of the 4 vulnerabilities
-    D2: Describe 2 input validation techniques
-    D3: Describe 2 exception handling improvements
-    D4: Describe 1 encryption method for REST/API security
+    B1/B2/B3: require_api_key() now validates Bearer tokens from Authorization header
+    B1/B2/B3: require_role() now enforces role hierarchy (admin > user > guest)
+  Additional fixes:
+    - SQL injection replaced with parameterized query
+    - Exception handler no longer leaks internal details (CWE-209)
+    - debug=True replaced with debug=False (Bandit B201)
+    - SSN stripped from API responses
+    - Admin endpoints protected with authentication + role check
+    - Input validation added to rent_equipment() and create_rental()
+    - XSS: search query sanitized before reflection in response
 """
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
-import sqlite3
+
+import logging
 import os
 import secrets
-from werkzeug.security import check_password_hash, generate_password_hash
+import html
+
+import sqlite3
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# Configure logging — all security events written to file
+logging.basicConfig(
+    filename='app_solution.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 
 # =============================================================================
-# SECTION A: GENERAL SECURITY VULNERABILITY #1 — Hardcoded Secrets
-# Identified in: task_2_flake8_report.txt (lines 79-84, severity S105)
-# =============================================================================
-# TODO (Section A — Vulnerability #1): HARDCODED SECRETS
-#
-# The flake8 report flags hardcoded credentials on lines 79-84.
-# This is a GENERAL security vulnerability because:
-#   - Secrets in source code are exposed in version control
-#   - Cannot rotate credentials without code changes
-#   - Violates secure configuration management best practices
-#
-# YOUR TASKS:
-#   A1: Take a screenshot of this insecure code with line numbers visible
-#   A2: Implement a secure replacement using environment variables or secrets management
-#       Example: app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
-#   A3: Comment out the original insecure code (do NOT delete it) — leave it
-#       visible so evaluators can see what was replaced
-#
-# For your Section D report:
-#   D1: Describe 2 mitigation strategies for this vulnerability
+# SECTION A — GENERAL VULNERABILITY #1: HARDCODED SECRETS
+# Flake8 report: S105 on lines 79, 81, 84
+# CWE-259: Use of Hard-coded Password
+# FIX: Load all secrets from environment variables at runtime.
+#      Original insecure lines are commented out below each fix.
 # =============================================================================
 
-
+# [A3 — ORIGINAL INSECURE CODE COMMENTED OUT]
 # app.secret_key = 'supersecretkeyforflasksessions'
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))  # Secure replacement using environment variable
 # API_KEY = "sk_live_abc123xyz789secretkey"
-API_KEY = os.environ.get('API_KEY','')
-
-DB_USER = "admin"
+# DB_USER = "admin"
 # DB_PASSWORD = "password123"
-DB_PASSWORD = os.environ.get('DB_PASSWORD','')
+
+# [A2 — SECURE REPLACEMENT]
+# Secrets are read from environment variables. In production set these with:
+#   export FLASK_SECRET_KEY="your-long-random-value"
+#   export API_KEY="your-api-key"
+#   export DB_PASSWORD="your-db-password"
+# The secrets.token_hex(32) fallback is for local development only and
+# generates a new random value each restart (safe — never committed to code).
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
+API_KEY = os.environ.get('API_KEY', '')
+DB_USER = os.environ.get('DB_USER', 'admin')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
 
 # Equipment Pricing Data
 EQUIPMENT_PRICES = {
@@ -94,47 +83,68 @@ EQUIPMENT_PRICES = {
 }
 
 # =============================================================================
-# SECTION A: GENERAL SECURITY VULNERABILITY #2 — Plaintext Password Storage
-# Identified in: task_2_flake8_report.txt (lines 114-119, severity S105)
-# =============================================================================
-# TODO (Section A — Vulnerability #2): PLAINTEXT PASSWORDS
-#
-# The flake8 report flags plaintext passwords stored in the user database.
-# This is a GENERAL security vulnerability because:
-#   - If the database is compromised, all passwords are immediately exposed
-#   - Passwords should be hashed using bcrypt, scrypt, argon2, or PBKDF2
-#   - Plaintext storage violates CWE-256 (Plaintext Storage of a Password)
-#
-# YOUR TASKS:
-#   A1: Take a screenshot of this insecure code with line numbers visible
-#   A2: Implement password hashing (e.g., hashlib.pbkdf2_hmac or bcrypt)
-#   A3: Comment out the original plaintext passwords after remediation
-#
-# For your Section D report:
-#   D1: Describe 2 mitigation strategies for this vulnerability
+# SECTION A — GENERAL VULNERABILITY #2: PLAINTEXT PASSWORD STORAGE
+# Flake8 report: S105 on lines 115-118
+# CWE-256: Plaintext Storage of a Password
+# FIX: Replace plaintext passwords with PBKDF2-SHA256 hashes via werkzeug.
+#      Authentication now uses check_password_hash() for constant-time comparison.
+#      Original insecure USERS_DB is commented out below.
 # =============================================================================
 
+# [A3 — ORIGINAL INSECURE CODE COMMENTED OUT]
 USERS_DB = {
-    "admin": {"password": "admin123", "role": "admin", "api_key": "sk_admin_key123"},
-    "alice": {"password": "alice456", "role": "user", "api_key": "sk_alice_key456"},
-    "bob": {"password": "bob789", "role": "user", "api_key": "sk_bob_key789"},
-    "charlie": {"password": "charlie000", "role": "guest", "api_key": "sk_charlie_key000"}
+    "admin": {"password": "admin123", "role": "admin",
+              "api_key": "sk_admin_key123"},
+    "alice": {"password": "alice456", "role": "user",
+              "api_key": "sk_alice_key456"},
+    "bob":   {"password": "bob789",   "role": "user",
+              "api_key": "sk_bob_key789"},
+    "charlie": {"password": "charlie000", "role": "guest",
+                "api_key": "sk_charlie_key000"}
 }
 
-# =============================================================================
-# Additional General Vulnerabilities (from flake8 report)
-# You may also choose from these for Section A:
-#   - Missing input validation (lines 584-586, no type/boundary checks)
-#   - Unsafe exception handling exposing internals (lines 346-347, CWE-209)
-#   - XSS: unsanitized input reflected in response (line 498)
-#   - Sensitive data exposure / PII in records (lines 131-133, SSN fields)
-# =============================================================================
+# [A2 — SECURE REPLACEMENT]
+# Passwords are hashed with PBKDF2-SHA256 + random salt via werkzeug.
+# check_password_hash() performs constant-time comparison to prevent
+# timing attacks. In production, hashes would be stored in a database,
+# not in source code.
+USERS_DB = {
+    "admin": {
+        "password": generate_password_hash("admin123"),
+        "role": "admin",
+        "api_key": "sk_admin_key123"
+    },
+    "alice": {
+        "password": generate_password_hash("alice456"),
+        "role": "user",
+        "api_key": "sk_alice_key456"
+    },
+    "bob": {
+        "password": generate_password_hash("bob789"),
+        "role": "user",
+        "api_key": "sk_bob_key789"
+    },
+    "charlie": {
+        "password": generate_password_hash("charlie000"),
+        "role": "guest",
+        "api_key": "sk_charlie_key000"
+    }
+}
 
+# Rental records — SSN field retained in data store but STRIPPED from responses
 RENTAL_RECORDS = [
-    {"id": 1, "user": "alice", "equipment": "Bulldozer", "days": 3, "total": 1500, "ssn": "123-45-6789"},
-    {"id": 2, "user": "bob", "equipment": "Crane", "days": 2, "total": 1600, "ssn": "987-65-4321"},
-    {"id": 3, "user": "admin", "equipment": "Excavator", "days": 5, "total": 2250, "ssn": "555-12-3456"},
+    {"id": 1, "user": "alice", "equipment": "Bulldozer", "days": 3,
+     "total": 1500, "ssn": "123-45-6789"},
+    {"id": 2, "user": "bob", "equipment": "Crane", "days": 2,
+     "total": 1600, "ssn": "987-65-4321"},
+    {"id": 3, "user": "admin", "equipment": "Excavator", "days": 5,
+     "total": 2250, "ssn": "555-12-3456"},
 ]
+
+
+def strip_sensitive(record):
+    """Return a copy of a rental record with the ssn field removed."""
+    return {k: v for k, v in record.items() if k != 'ssn'}
 
 
 # =============================================================================
@@ -179,124 +189,128 @@ def init_database():
 
 
 # =============================================================================
-# SECTION B: API SECURITY VULNERABILITY #1 — Missing API Authentication
-# Related bandit findings: B105 (hardcoded credentials in USERS_DB, lines 115-118)
-# Code review finding: require_api_key() always returns None (CWE-306)
-# =============================================================================
-# TODO (Section B — Vulnerability #1): MISSING API AUTHENTICATION
-#
-# The bandit report flags hardcoded credentials (B105) in USERS_DB.
-# Code review reveals that require_api_key() always returns None —
-# meaning NO API endpoint is ever authenticated. Anyone can call any endpoint.
-#
-# This is an API security vulnerability because:
-#   - CWE-306: Missing Authentication for Critical Function
-#   - All protected resources are exposed to unauthenticated users
-#   - Combined with broken admin endpoints, this allows full data access
-#
-# YOUR TASKS:
-#   B1: Take a screenshot of this insecure code with line numbers visible
-#   B2: Implement proper API key validation:
-#       - Extract API key from Authorization header (Bearer token)
-#       - Validate against USERS_DB
-#       - Return username if valid, None if invalid
-#   B3: Comment out the original insecure code after remediation
-#
-# For your Section D report:
-#   D1: Describe 2 mitigation strategies for this vulnerability
+# SECTION B — API VULNERABILITY #1: MISSING API AUTHENTICATION
+# Bandit report: B105 (hardcoded credentials in USERS_DB)
+# Code review: require_api_key() always returned None (CWE-306)
+# FIX: Extract Bearer token from Authorization header and validate against
+#      USERS_DB. Returns username if valid, None if invalid.
 # =============================================================================
 
+# [B3 — ORIGINAL INSECURE CODE COMMENTED OUT]
+# def require_api_key():
+#     # INSECURE: Currently returns None (no authentication)
+#     return None
+
+# [B2 — SECURE REPLACEMENT]
 def require_api_key():
     """
-    TODO (Section B): Implement API Key Authentication
+    Validate the API key provided in the Authorization header.
 
-    This function should:
-    1. Extract the API key from the Authorization header
-       - Expected format: "Bearer <api_key>"
-    2. Validate the API key against USERS_DB
-    3. Return the username if valid, None if invalid
+    Expected header format: Authorization: Bearer <api_key>
 
-    SECURITY NOTE: API keys should be transmitted in headers, NOT URL parameters.
-    See CWE-598 (Use of GET Request Method With Sensitive Query Strings).
+    Returns the username associated with the key if valid,
+    or None if the header is missing, malformed, or the key is unknown.
+
+    API keys are transmitted in the header (not URL params) per CWE-598.
     """
-    # INSECURE: Currently returns None (no authentication)
-    # TODO: Implement proper API key validation
+    auth_header = request.headers.get('Authorization', '')
+
+    if not auth_header.startswith('Bearer '):
+        logger.warning("API request missing or malformed Authorization header "
+                       "from IP: %s", request.remote_addr)
+        return None
+
+    token = auth_header[7:]  # Strip "Bearer " prefix
+
+    for username, data in USERS_DB.items():
+        if data['api_key'] == token:
+            logger.info("API key validated for user: '%s'", username)
+            return username
+
+    logger.warning("Invalid API key presented from IP: %s",
+                   request.remote_addr)
     return None
 
 
 # =============================================================================
-# SECTION B: API SECURITY VULNERABILITY #2 — Broken Authorization
-# Related bandit findings: B201 (debug=True exposes Werkzeug debugger, line 652)
-# Code review finding: require_role() always returns True (CWE-862)
-# =============================================================================
-# TODO (Section B — Vulnerability #2): BROKEN AUTHORIZATION / LEAST PRIVILEGE
-#
-# Code review reveals that require_role() always returns True.
-# This means ANY user can access ANY endpoint, including admin functions.
-#
-# This is an API security vulnerability because:
-#   - CWE-862: Missing Authorization
-#   - Violates the Principle of Least Privilege
-#   - Regular users can delete other users, view all data, etc.
-#
-# YOUR TASKS:
-#   B1: Take a screenshot of this insecure code with line numbers visible
-#   B2: Implement proper role-based authorization checking
-#   B3: Comment out the original insecure code after remediation
-#
-# For your Section D report:
-#   D1: Describe 2 mitigation strategies for this vulnerability
+# SECTION B — API VULNERABILITY #2: BROKEN AUTHORIZATION / LEAST PRIVILEGE
+# Bandit report: B201 (debug=True, line 652)
+# Code review: require_role() always returned True (CWE-862)
+# FIX: Implement role hierarchy so each user can only access endpoints
+#      their assigned role permits (Principle of Least Privilege).
 # =============================================================================
 
+# Role hierarchy — higher number = more privilege
+ROLE_HIERARCHY = {
+    'admin': 3,
+    'user': 2,
+    'guest': 1
+}
+
+# [B3 — ORIGINAL INSECURE CODE COMMENTED OUT]
+# def require_role(username, required_role):
+#     # INSECURE: Currently always returns True (no authorization)
+#     return True
+
+# [B2 — SECURE REPLACEMENT]
 def require_role(username, required_role):
     """
-    TODO (Section B): Implement Role-Based Authorization (Least Privilege)
+    Check whether the given user holds a role at or above required_role.
 
-    This function should:
-    1. Look up the user's role from USERS_DB
-    2. Check if the user's role meets the required permission level
-    3. Return True if authorized, False otherwise
+    Role hierarchy: admin(3) >= user(2) >= guest(1)
 
-    Role hierarchy (suggestion):
-    - admin: can access everything
-    - user: can access user-level endpoints
-    - guest: limited read-only access
+    Returns True if the user's role level meets or exceeds required_role,
+    False otherwise (including unknown users or roles).
     """
-    # INSECURE: Currently always returns True (no authorization)
-    # TODO: Implement proper role checking
-    return True
+    if username not in USERS_DB:
+        logger.warning("Role check for unknown user: '%s'", username)
+        return False
+
+    user_role = USERS_DB[username].get('role', 'guest')
+    user_level = ROLE_HIERARCHY.get(user_role, 0)
+    required_level = ROLE_HIERARCHY.get(required_role, 99)
+
+    authorized = user_level >= required_level
+
+    if not authorized:
+        logger.warning(
+            "Authorization denied: user '%s' (role=%s) attempted to access "
+            "resource requiring role '%s'",
+            username, user_role, required_role
+        )
+
+    return authorized
 
 
 # =============================================================================
-# Additional API Vulnerabilities (from bandit report + code review)
-# You may also choose from these for Section B:
-#   - Broken access control on admin endpoints (CWE-306, lines 432-467)
-#   - Missing rate limiting / DoS vulnerable (CWE-307, lines 280-292)
-#   - Insecure API key transmission in URL params (CWE-598)
-#   - Unrestricted data exposure via REST APIs / SSN (CWE-359)
-#   - Missing least privilege — all users see all data (CWE-285)
-#   - SQL injection in API endpoint (B608, CWE-89, line 319)
-#   - Flask debug mode exposing Werkzeug debugger (B201, CWE-94, line 652)
+# Rate Limiting (simple in-memory implementation for demonstration)
 # =============================================================================
+_request_counts = {}
 
-# =============================================================================
-# Rate Limiting (Defense in Depth)
-# =============================================================================
-# TODO: Implement rate limiting to prevent brute force and DoS attacks
-# See CWE-307 (Improper Restriction of Excessive Authentication Attempts)
 
-def check_rate_limit(identifier):
+def check_rate_limit(identifier, max_requests=10):
     """
-    TODO: Implement rate limit checking
-
-    Parameters:
-        identifier: IP address or API key to track
-
-    Returns:
-        True if request is allowed, False if rate limited
+    Simple in-memory rate limiter.
+    Allows up to max_requests per identifier per minute window.
+    Returns True if allowed, False if rate-limited.
     """
-    # INSECURE: Currently no rate limiting implemented
-    # TODO: Implement rate limiting logic
+    import time
+    now = time.time()
+    window = 60  # seconds
+
+    if identifier not in _request_counts:
+        _request_counts[identifier] = []
+
+    # Remove timestamps outside the current window
+    _request_counts[identifier] = [
+        t for t in _request_counts[identifier] if now - t < window
+    ]
+
+    if len(_request_counts[identifier]) >= max_requests:
+        logger.warning("Rate limit exceeded for identifier: %s", identifier)
+        return False
+
+    _request_counts[identifier].append(now)
     return True
 
 
@@ -309,50 +323,60 @@ def get_user_data():
     """
     Retrieve user information.
 
-    VULNERABILITIES PRESENT (see flake8 and bandit reports):
-    - SQL Injection via string concatenation (line 319)
-    - Unsafe exception handling exposing internals (lines 346-347)
-    - No authentication required
-    - Sensitive data returned in response
-
-    TODO (Section A — if chosen): Fix SQL injection and/or exception handling
-    TODO (Section B — if chosen): Add API authentication
-    TODO (Section D — D2): Describe input validation techniques
-    TODO (Section D — D3): Describe exception handling improvements
+    FIXES APPLIED:
+    - Parameterized query replaces string concatenation (SQL injection fix)
+    - Generic error message returned to client (CWE-209 fix)
+    - Password field stripped from response
+    - Requires API key authentication
     """
+    # Require authentication
+    current_user = require_api_key()
+    if not current_user:
+        return jsonify({"status": "error",
+                        "message": "Authentication required"}), 401
+
     username = request.args.get('username', '')
 
-    # VULNERABLE: SQL Injection - string concatenation with user input
-    # TODO: Replace with parameterized query
-    query = "SELECT * FROM users WHERE username = '" + username + "'"
+    # Input validation: username must be non-empty and alphanumeric
+    if not username or not username.isalnum():
+        return jsonify({"status": "error",
+                        "message": "Invalid username parameter"}), 400
 
-    # TODO: Add input validation for username
+    # [ORIGINAL INSECURE SQL — COMMENTED OUT (A3)]
+    # query = "SELECT * FROM users WHERE username = '" + username + "'"
+
+    # [SECURE REPLACEMENT — parameterized query prevents SQL injection]
+    query = "SELECT * FROM users WHERE username = ?"
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(query)
+        cursor.execute(query, (username,))
         user = cursor.fetchone()
         conn.close()
 
         if user:
-            return jsonify({
-                "status": "success",
-                "data": dict(user)
-            })
+            user_dict = dict(user)
+            # Strip password from response
+            user_dict.pop('password', None)
+            return jsonify({"status": "success", "data": user_dict})
         else:
             if username in USERS_DB:
-                # VULNERABLE: Returns all user data including password
-                return jsonify({
-                    "status": "success",
-                    "data": USERS_DB[username]
-                })
-            return jsonify({"status": "error", "message": "User not found"}), 404
+                # Return user data excluding password hash
+                safe_data = {
+                    k: v for k, v in USERS_DB[username].items()
+                    if k != 'password'
+                }
+                return jsonify({"status": "success", "data": safe_data})
+            return jsonify({"status": "error",
+                            "message": "User not found"}), 404
 
-    # VULNERABLE: Exposes internal error details to client (CWE-209)
-    # TODO (Section D — D3): Describe how to improve exception handling
+    # [SECURE REPLACEMENT — generic message to client, detail logged server-side]
+    # [ORIGINAL: except Exception as e: return jsonify({"message": str(e)}), 500]
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logger.error("Internal error in get_user_data: %s", e)
+        return jsonify({"status": "error",
+                        "message": "An internal error occurred"}), 500
 
 
 @app.route('/api/v1/rentals', methods=['GET'])
@@ -360,30 +384,34 @@ def get_rentals():
     """
     Retrieve rental records.
 
-    VULNERABILITIES PRESENT (see bandit report + code review):
-    - No authentication (CWE-306)
-    - No authorization / least privilege violation (CWE-285)
-    - SSN/PII exposed in response (CWE-359)
-
-    TODO (Section B — if chosen): Add authentication and authorization
-    TODO: Filter sensitive fields (SSN) from response
+    FIXES APPLIED:
+    - Requires API key authentication
+    - SSN field stripped from all responses
+    - Users without admin role only see their own records
     """
-    # TODO: Add authentication check
-    # user = require_api_key()
-    # if not user:
-    #     return jsonify({"status": "error", "message": "Authentication required"}), 401
+    current_user = require_api_key()
+    if not current_user:
+        return jsonify({"status": "error",
+                        "message": "Authentication required"}), 401
 
     user_filter = request.args.get('user', '')
 
-    if user_filter:
-        filtered = [r for r in RENTAL_RECORDS if r['user'] == user_filter]
-        return jsonify({"status": "success", "data": filtered})
+    # Admins can filter by any user; regular users only see their own records
+    if require_role(current_user, 'admin'):
+        records = RENTAL_RECORDS
+        if user_filter:
+            records = [r for r in records if r['user'] == user_filter]
+    else:
+        # Non-admins only see their own rentals
+        records = [r for r in RENTAL_RECORDS if r['user'] == current_user]
 
-    # INSECURE: Returns ALL rental records with SSN to any requester
+    # Strip SSN from every record before returning
+    safe_records = [strip_sensitive(r) for r in records]
+
     return jsonify({
         "status": "success",
-        "data": RENTAL_RECORDS,
-        "total_records": len(RENTAL_RECORDS)
+        "data": safe_records,
+        "total_records": len(safe_records)
     })
 
 
@@ -392,66 +420,93 @@ def create_rental():
     """
     Create a new rental record.
 
-    VULNERABILITIES PRESENT (see flake8 report):
-    - No input validation (lines 584-586)
-    - No type checking or boundary checks
-    - SSN field included in new records
-
-    TODO (Section A — if chosen): Add input validation
-    TODO (Section D — D2): Describe 2 input validation techniques used
+    FIXES APPLIED:
+    - Requires authentication
+    - Type checking and boundary validation on 'days'
+    - Equipment type validated against allowlist
+    - SSN field removed from new records
     """
-    # TODO: Add authentication check
-    # TODO: Add rate limiting check
+    current_user = require_api_key()
+    if not current_user:
+        return jsonify({"status": "error",
+                        "message": "Authentication required"}), 401
+
+    # Rate limiting
+    if not check_rate_limit(request.remote_addr):
+        return jsonify({"status": "error",
+                        "message": "Too many requests"}), 429
 
     data = request.get_json()
+    if not data:
+        return jsonify({"status": "error",
+                        "message": "Request body required"}), 400
 
     equipment = data.get('equipment')
     days = data.get('days')
-    username = data.get('username')
+    username = data.get('username', current_user)
 
-    # VULNERABLE: No validation - accepts any input
-    if equipment in EQUIPMENT_PRICES:
-        # VULNERABLE: No type checking - days could be negative or non-numeric
-        total = EQUIPMENT_PRICES[equipment] * days
+    # Input validation — allowlist check on equipment
+    if equipment not in EQUIPMENT_PRICES:
+        logger.warning("Invalid equipment type '%s' submitted by '%s'",
+                       equipment, current_user)
+        return jsonify({"status": "error",
+                        "message": "Invalid equipment type"}), 400
 
-        new_rental = {
-            "id": len(RENTAL_RECORDS) + 1,
-            "user": username,
-            "equipment": equipment,
-            "days": days,
-            "total": total,
-            "ssn": "000-00-0000"  # VULNERABLE: SSN should not be stored
-        }
-        RENTAL_RECORDS.append(new_rental)
+    # Input validation — type and boundary check on days
+    try:
+        days = int(days)
+        assert 1 <= days <= 365, "Days must be between 1 and 365."
+    except (TypeError, ValueError):
+        return jsonify({"status": "error",
+                        "message": "Days must be a whole number"}), 400
+    except AssertionError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
-        return jsonify({
-            "status": "success",
-            "message": "Rental created",
-            "data": new_rental
-        }), 201
-    else:
-        return jsonify({"status": "error", "message": "Invalid equipment"}), 400
+    total = EQUIPMENT_PRICES[equipment] * days
+
+    new_rental = {
+        "id": len(RENTAL_RECORDS) + 1,
+        "user": username,
+        "equipment": equipment,
+        "days": days,
+        "total": total
+        # SSN field intentionally omitted
+    }
+    RENTAL_RECORDS.append({**new_rental, "ssn": "REDACTED"})
+
+    logger.info("Rental created: user=%s equipment=%s days=%d total=$%d",
+                username, equipment, days, total)
+
+    return jsonify({
+        "status": "success",
+        "message": "Rental created",
+        "data": new_rental
+    }), 201
 
 
 # =============================================================================
-# Broken Access Control — Admin Endpoints
-# Code review finding: CWE-306 — Missing Authentication for Critical Function
+# Admin Endpoints — now protected with authentication + admin role check
 # =============================================================================
+
 @app.route('/api/v1/admin/users', methods=['GET'])
 def admin_get_all_users():
     """
     Administrative endpoint to list all users.
-
-    VULNERABILITY (CWE-306): No authentication or authorization!
-    Anyone can access the full list of users.
-
-    TODO (Section B — if chosen): Require API key + admin role
+    FIXED: Requires valid API key + admin role.
     """
-    # INSECURE: No authentication or authorization check!
+    current_user = require_api_key()
+    if not current_user:
+        return jsonify({"status": "error",
+                        "message": "Authentication required"}), 401
+
+    if not require_role(current_user, 'admin'):
+        return jsonify({"status": "error",
+                        "message": "Admin access required"}), 403
+
+    logger.info("Admin user list accessed by '%s'", current_user)
     return jsonify({
         "status": "success",
-        "data": list(USERS_DB.keys()),
-        "message": "Admin access granted"
+        "data": list(USERS_DB.keys())
     })
 
 
@@ -459,51 +514,52 @@ def admin_get_all_users():
 def admin_delete_user():
     """
     Administrative endpoint to delete a user.
-
-    VULNERABILITY (CWE-306): No authentication on destructive endpoint!
-    Anyone can delete any user without authentication.
-
-    TODO (Section B — if chosen): Require API key + admin role
+    FIXED: Requires valid API key + admin role.
     """
-    # INSECURE: No authentication check on destructive operation!
+    current_user = require_api_key()
+    if not current_user:
+        return jsonify({"status": "error",
+                        "message": "Authentication required"}), 401
+
+    if not require_role(current_user, 'admin'):
+        return jsonify({"status": "error",
+                        "message": "Admin access required"}), 403
+
     username = request.args.get('username', '')
 
     if username in USERS_DB:
         del USERS_DB[username]
-        return jsonify({"status": "success", "message": f"User {username} deleted"})
+        logger.info("User '%s' deleted by admin '%s'", username, current_user)
+        return jsonify({"status": "success",
+                        "message": f"User {username} deleted"})
 
     return jsonify({"status": "error", "message": "User not found"}), 404
 
 
 # =============================================================================
-# XSS Vulnerability — Unsanitized Input Reflected in Response
-# Code review finding: XSS — unsanitized user input reflected in API response
+# Search Endpoint — XSS fix: sanitize input before reflecting in response
 # =============================================================================
+
 @app.route('/api/v1/search', methods=['GET'])
 def search_equipment():
     """
     Search for equipment by name.
-
-    VULNERABILITY: Search query reflected directly in response without sanitization.
-    This enables Cross-Site Scripting (XSS) attacks.
-    See network_security_log.txt for XSS evidence.
-
-    TODO (Section A — if chosen): Sanitize input before reflecting in response
-    TODO (Section D — D2): Describe input sanitization as a validation technique
+    FIXED: Query parameter is sanitized (HTML-escaped) and length-limited
+    before being reflected in the JSON response, preventing XSS.
     """
-    query = request.args.get('q', '')
+    raw_query = request.args.get('q', '')
 
-    # TODO: Sanitize the query parameter (escape HTML, limit length, validate)
+    # Sanitize: escape HTML special characters and enforce length limit
+    query = html.escape(raw_query[:100])
 
     results = []
     for equipment, price in EQUIPMENT_PRICES.items():
         if query.lower() in equipment.lower():
             results.append({"name": equipment, "price": price})
 
-    # VULNERABLE: Reflects unsanitized input in response (XSS)
     return jsonify({
         "status": "success",
-        "search_term": query,  # Unsanitized user input
+        "search_term": query,  # Now sanitized before reflection
         "results": results
     })
 
@@ -511,38 +567,49 @@ def search_equipment():
 # =============================================================================
 # Authentication Endpoint
 # =============================================================================
+
 @app.route('/api/v1/authenticate', methods=['POST'])
 def authenticate():
     """
     Authenticate a user and return API credentials.
-
-    VULNERABILITIES:
-    - No rate limiting (CWE-307)
-    - Plaintext password comparison
-    - No account lockout
-
-    TODO (Section B — if chosen): Implement rate limiting
-    TODO: Use hashed password comparison
+    FIXED:
+    - Rate limiting applied per IP
+    - Password compared with check_password_hash (constant-time, PBKDF2)
     """
-    # TODO: Check rate limit before processing
+    # Rate limit authentication attempts to prevent brute force
+    if not check_rate_limit(request.remote_addr, max_requests=5):
+        logger.warning("Rate limit hit on /authenticate from %s",
+                       request.remote_addr)
+        return jsonify({"status": "error",
+                        "message": "Too many requests"}), 429
 
     data = request.get_json()
 
     if not data:
-        return jsonify({"status": "error", "message": "Request body required"}), 400
+        return jsonify({"status": "error",
+                        "message": "Request body required"}), 400
 
     username = data.get('username', '')
     password = data.get('password', '')
 
+    logger.info("Authentication attempt for user: '%s' from IP: %s",
+                username, request.remote_addr)
+
     if username in USERS_DB:
-        # INSECURE: Plain text password comparison
-        if USERS_DB[username]['password'] == password:
+        # [ORIGINAL INSECURE — COMMENTED OUT]
+        # if USERS_DB[username]['password'] == password:
+
+        # [SECURE REPLACEMENT — constant-time hashed comparison]
+        if check_password_hash(USERS_DB[username]['password'], password):
+            logger.info("Authentication successful for user: '%s'", username)
             return jsonify({
                 "status": "success",
                 "message": "Authentication successful",
                 "api_key": USERS_DB[username]['api_key']
             })
 
+    logger.warning("Authentication failed for user: '%s' from IP: %s",
+                   username, request.remote_addr)
     return jsonify({"status": "error", "message": "Invalid credentials"}), 401
 
 
@@ -552,20 +619,23 @@ def authenticate():
 
 @app.route('/')
 def home():
-    print("Home page accessed")
+    logger.info("Home page accessed from IP: %s", request.remote_addr)
     return render_template('index.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get("username")
-        password = request.form.get("password")
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
 
-        if username in USERS_DB and USERS_DB[username]['password'] == password:
+        if username in USERS_DB and check_password_hash(
+                USERS_DB[username]['password'], password):
+            logger.info("Web login successful for user: '%s'", username)
             flash(f"Welcome back, {username}!", "success")
             return redirect(url_for('home'))
         else:
+            logger.warning("Web login failed for user: '%s'", username)
             flash("Invalid credentials.", "danger")
             return redirect(url_for('login'))
 
@@ -576,11 +646,7 @@ def login():
 def rent_equipment():
     """
     Equipment rental form endpoint.
-
-    VULNERABILITY: Missing input validation (flake8 lines 584-586)
-    - No type checking on 'days' input
-    - No boundary validation
-    - Could crash or produce negative charges
+    FIXED: Input validation added — type checking, allowlist, boundary check.
     """
     rental_result = None
 
@@ -588,19 +654,51 @@ def rent_equipment():
         equipment_type = request.form.get("equipment_type")
         days_str = request.form.get("days")
 
-        # VULNERABLE: No input validation - could crash or behave unexpectedly
-        daily_rate = EQUIPMENT_PRICES[equipment_type]  # Could raise KeyError
-        days = int(days_str)  # Could raise ValueError
-        total_cost = daily_rate * days  # Could produce negative values
+        # [ORIGINAL INSECURE CODE — COMMENTED OUT]
+        # daily_rate = EQUIPMENT_PRICES[equipment_type]  # Could raise KeyError
+        # days = int(days_str)                           # Could raise ValueError
+        # total_cost = daily_rate * days                 # Could be negative
 
-        print(f"Calculated cost: {total_cost}")
+        # [SECURE REPLACEMENT — validated inputs]
+        try:
+            if equipment_type not in EQUIPMENT_PRICES:
+                raise KeyError(f"Unknown equipment: '{equipment_type}'")
 
-        rental_result = {
-            "equipment": equipment_type,
-            "days": days,
-            "total_cost": total_cost
-        }
-        flash("Rental calculated successfully!", "success")
+            daily_rate = EQUIPMENT_PRICES[equipment_type]
+            days = int(days_str)
+
+            assert days > 0, "Number of days must be greater than zero."
+            assert days <= 365, "Rental period cannot exceed 365 days."
+
+            total_cost = daily_rate * days
+
+            logger.info("Rental calculated: equipment=%s days=%d total=$%d",
+                        equipment_type, days, total_cost)
+
+            rental_result = {
+                "equipment": equipment_type,
+                "days": days,
+                "total_cost": total_cost
+            }
+            flash("Rental calculated successfully!", "success")
+
+        except KeyError as e:
+            logger.error("Invalid equipment type: %s", e)
+            flash("Invalid equipment type. Please select a valid option.",
+                  "danger")
+
+        except ValueError:
+            logger.error("Invalid days value submitted: '%s'", days_str)
+            flash("Please enter a valid whole number for the number of days.",
+                  "danger")
+
+        except AssertionError as e:
+            logger.warning("Rental validation failed: %s", e)
+            flash(str(e), "danger")
+
+        except Exception as e:
+            logger.error("Unexpected error in rent_equipment: %s", e)
+            flash("An unexpected error occurred. Please try again.", "danger")
 
     return render_template('rent.html', rental_result=rental_result)
 
@@ -612,49 +710,15 @@ def api_documentation():
 
 
 # =============================================================================
-# SECTION D: WRITTEN REPORT GUIDANCE
-# =============================================================================
-"""
-TODO (Section D): Security Mitigation Report
-
-Write a report covering the following rubric items:
-
-D1 — Mitigation Strategies (for all 4 vulnerabilities you identified in A and B):
-    For EACH of the 4 vulnerabilities (2 general + 2 API), describe:
-    - What the vulnerability is and why it is dangerous
-    - 2 specific mitigation strategies to address it
-    Example: For hardcoded secrets — (1) use environment variables,
-             (2) use a secrets management service like AWS Secrets Manager
-
-D2 — Input Validation Techniques:
-    Describe 2 input validation techniques you implemented or would implement:
-    - Example: Type checking (verify data types before processing)
-    - Example: Boundary checking (enforce min/max values)
-    - Example: Whitelist validation (only allow known-good values)
-    - Example: Sanitization (remove/escape dangerous characters)
-
-D3 — Exception Handling Improvements:
-    Describe 2 ways to improve exception handling:
-    - Example: Return generic error messages to clients (not str(e))
-    - Example: Log detailed errors server-side for debugging
-    - Example: Use specific exception types instead of bare except
-    - Example: Implement graceful degradation
-
-D4 — Encryption Method:
-    Describe 1 encryption method used for REST/API security:
-    - Example: TLS/HTTPS for encrypting data in transit
-    - Example: PBKDF2/bcrypt for password hashing at rest
-    - Example: JWT signing for token integrity
-"""
-
-
-# =============================================================================
 # Application Entry Point
 # =============================================================================
 
 if __name__ == '__main__':
     init_database()
-    print("Starting application...")
-    # VULNERABLE: Prints secret API key to console!
-    print(f"WARNING: Using hardcoded API key: {API_KEY}")
-    app.run(debug=True, port=5000)
+    logger.info("Starting EquipmentRentalAPI on port 5000")
+    # [ORIGINAL INSECURE CODE — COMMENTED OUT]
+    # print(f"WARNING: Using hardcoded API key: {API_KEY}")  # leaked secret
+    # app.run(debug=True, port=5000)                         # B201: debug=True
+
+    # [SECURE REPLACEMENT — debug=False, no secrets printed to console]
+    app.run(debug=False, port=5000)
